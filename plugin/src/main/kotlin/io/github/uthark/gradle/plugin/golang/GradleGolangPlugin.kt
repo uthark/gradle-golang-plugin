@@ -3,23 +3,34 @@
  */
 package io.github.uthark.gradle.plugin.golang
 
+import io.github.uthark.gradle.plugin.golang.task.GoBuild
 import io.github.uthark.gradle.plugin.golang.task.GoRun
-import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.model.ObjectFactory
+import org.gradle.language.base.plugins.LifecycleBasePlugin
 
 /**
  * A simple 'hello world' plugin.
  */
 class GradleGolangPlugin : Plugin<Project> {
     override fun apply(project: Project) {
+        project.pluginManager.apply(LifecycleBasePlugin::class.java)
+
         val extension = project.extensions.create("golang", GolangExtension::class.java)
+        extension.pkg.convention("main.go")
+
         project.task("configureGoRun") {
-            println("configuring go run")
             project.tasks.register("goRun", GoRun::class.java) { task ->
-                task.pkg = extension.pkg.get()
+                task.pkg.set(extension.pkg)
             }
+
+            project.tasks.create("goBuild", GoBuild::class.java) { task ->
+                task.pkg.set(extension.pkg)
+                val assembleTask = project.tasks.named(LifecycleBasePlugin.ASSEMBLE_TASK_NAME).get()
+                assembleTask.dependsOn(task)
+            }
+
         }
+
     }
 }
